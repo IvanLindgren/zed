@@ -226,6 +226,20 @@ pub struct ResetAllZoom {
     pub persist: bool,
 }
 
+pub mod ai_insights {
+    use gpui::actions;
+
+    actions!(
+        ai_insights,
+        [
+            /// Picks the model used for AI Insights edit predictions.
+            SelectCompletionModel,
+            /// Picks the model used for AI Insights descriptions and advice.
+            SelectInsightsModel,
+        ]
+    );
+}
+
 pub mod editor {
     use gpui::actions;
     actions!(

@@ -99,10 +99,11 @@ pub enum EditPredictionProvider {
     Ollama,
     OpenAiCompatibleApi,
     Mercury,
-    /// Predictions from the ChatGPT subscription (the `openai-subscribed`
-    /// language model provider). Model and effort come from `ai_insights`.
-    #[serde(rename = "chatgpt")]
-    ChatGpt,
+    /// Predictions from any configured language model provider (ChatGPT
+    /// subscription, DeepSeek, OpenAI, Anthropic, Ollama, ...).
+    /// Provider, model and effort come from the `ai_insights` settings.
+    #[serde(rename = "ai_insights", alias = "chatgpt")]
+    AiInsights,
 }
 
 impl EditPredictionProvider {
@@ -115,7 +116,7 @@ impl EditPredictionProvider {
             | EditPredictionProvider::Ollama
             | EditPredictionProvider::OpenAiCompatibleApi
             | EditPredictionProvider::Mercury
-            | EditPredictionProvider::ChatGpt => false,
+            | EditPredictionProvider::AiInsights => false,
         }
     }
 
@@ -128,7 +129,7 @@ impl EditPredictionProvider {
             EditPredictionProvider::None => None,
             EditPredictionProvider::Ollama => Some("Ollama"),
             EditPredictionProvider::OpenAiCompatibleApi => Some("OpenAI-Compatible API"),
-            EditPredictionProvider::ChatGpt => Some("ChatGPT"),
+            EditPredictionProvider::AiInsights => Some("AI Insights"),
         }
     }
 }

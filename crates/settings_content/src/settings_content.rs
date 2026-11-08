@@ -1087,15 +1087,30 @@ pub struct AiInsightsSettingsContent {
     ///
     /// Default: "ru"
     pub language: Option<String>,
-    /// Model id from the ChatGPT subscription (`openai-subscribed` provider).
+    /// Language model provider id for descriptions and advice, as listed under
+    /// LLM Providers: "openai-subscribed" (ChatGPT subscription), "deepseek",
+    /// "openai", "anthropic", "google", "openrouter", "ollama", ...
+    ///
+    /// Default: "openai-subscribed"
+    pub provider: Option<String>,
+    /// Model id for descriptions and advice.
     ///
     /// Default: "gpt-6.1-terra"
     pub model: Option<String>,
+    /// Provider id for edit predictions. Unset: same as `provider`.
+    ///
+    /// Default: null
+    pub completion_provider: Option<String>,
+    /// Model id for edit predictions. Unset: same as `model` when the provider
+    /// is the same, otherwise the provider's fast model.
+    ///
+    /// Default: null
+    pub completion_model: Option<String>,
     /// Reasoning effort for descriptions and advice: "none", "low", "medium", "high".
     ///
     /// Default: "medium"
     pub effort: Option<String>,
-    /// Reasoning effort for edit predictions (provider "chatgpt").
+    /// Reasoning effort for edit predictions (provider "ai_insights"). Ignored by models without reasoning.
     ///
     /// Default: "low"
     pub completion_effort: Option<String>,

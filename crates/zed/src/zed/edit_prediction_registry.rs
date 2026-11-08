@@ -151,7 +151,7 @@ fn edit_prediction_provider_config_for_settings(cx: &App) -> Option<EditPredicti
         EditPredictionProvider::Mercury => Some(EditPredictionProviderConfig::Zed(
             EditPredictionModel::Mercury,
         )),
-        EditPredictionProvider::ChatGpt => Some(EditPredictionProviderConfig::ChatGpt),
+        EditPredictionProvider::AiInsights => Some(EditPredictionProviderConfig::AiInsights),
     }
 }
 
@@ -159,7 +159,7 @@ fn edit_prediction_provider_config_for_settings(cx: &App) -> Option<EditPredicti
 enum EditPredictionProviderConfig {
     Copilot,
     Codestral,
-    ChatGpt,
+    AiInsights,
     Zed(EditPredictionModel),
 }
 
@@ -168,7 +168,7 @@ impl EditPredictionProviderConfig {
         match self {
             EditPredictionProviderConfig::Copilot => "Copilot",
             EditPredictionProviderConfig::Codestral => "Codestral",
-            EditPredictionProviderConfig::ChatGpt => "ChatGPT",
+            EditPredictionProviderConfig::AiInsights => "AI Insights",
             EditPredictionProviderConfig::Zed(model) => match model {
                 EditPredictionModel::Zeta => "Zeta",
                 EditPredictionModel::Fim { .. } => "FIM",
@@ -254,8 +254,8 @@ fn assign_edit_prediction_provider(
             let provider = cx.new(|_| CodestralEditPredictionDelegate::new(http_client));
             editor.set_edit_prediction_provider(Some(provider), trigger, window, cx);
         }
-        Some(EditPredictionProviderConfig::ChatGpt) => {
-            let provider = cx.new(|_| ai_insights::ChatGptEditPredictionDelegate::new());
+        Some(EditPredictionProviderConfig::AiInsights) => {
+            let provider = cx.new(|_| ai_insights::AiInsightsEditPredictionDelegate::new());
             editor.set_edit_prediction_provider(Some(provider), trigger, window, cx);
         }
         Some(EditPredictionProviderConfig::Zed(model)) => {

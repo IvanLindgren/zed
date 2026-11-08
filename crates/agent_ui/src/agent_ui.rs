@@ -17,7 +17,7 @@ mod external_source_prompt;
 mod favorite_models;
 mod inline_assistant;
 mod inline_prompt_editor;
-mod language_model_selector;
+pub mod language_model_selector;
 mod mention_set;
 mod message_editor;
 mod mode_selector;
@@ -949,7 +949,7 @@ fn update_command_palette_filter(cx: &mut App) {
                 | EditPredictionProvider::Ollama
                 | EditPredictionProvider::OpenAiCompatibleApi
                 | EditPredictionProvider::Mercury
-                | EditPredictionProvider::ChatGpt => {
+                | EditPredictionProvider::AiInsights => {
                     filter.show_namespace("edit_prediction");
                     filter.hide_namespace("copilot");
                     filter.show_action_types(edit_prediction_actions.iter());

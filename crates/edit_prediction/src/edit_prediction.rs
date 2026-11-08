@@ -2535,7 +2535,7 @@ fn is_ep_store_provider(provider: EditPredictionProvider) -> bool {
         EditPredictionProvider::None
         | EditPredictionProvider::Copilot
         | EditPredictionProvider::Codestral
-        | EditPredictionProvider::ChatGpt => false,
+        | EditPredictionProvider::AiInsights => false,
     }
 }
 
@@ -2560,7 +2560,7 @@ impl EditPredictionStore {
                 EditPredictionProvider::None
                 | EditPredictionProvider::Copilot
                 | EditPredictionProvider::Codestral
-                | EditPredictionProvider::ChatGpt => {
+                | EditPredictionProvider::AiInsights => {
                     log::error!("queue_prediction_refresh called with non-store provider");
                     return;
                 }

@@ -1,4 +1,4 @@
-//! Inline edit predictions (ghost text) served by the ChatGPT subscription.
+//! Inline edit predictions (ghost text) from any configured language model provider.
 //! Modeled on the Codestral delegate: one pending request, interpolation while
 //! the user keeps typing, Tab accepts through the editor's standard flow.
 
@@ -17,7 +17,7 @@ use text::{Point, ToPoint as _};
 
 use crate::{
     AiInsightsSettings,
-    model::{self, TextRequest},
+    model::{self, Purpose, TextRequest},
 };
 
 const LINES_BEFORE: u32 = 80;
@@ -47,12 +47,12 @@ impl CurrentCompletion {
 }
 
 #[derive(Default)]
-pub struct ChatGptEditPredictionDelegate {
+pub struct AiInsightsEditPredictionDelegate {
     pending_request: Option<Task<Result<()>>>,
     current_completion: Option<CurrentCompletion>,
 }
 
-impl ChatGptEditPredictionDelegate {
+impl AiInsightsEditPredictionDelegate {
     pub fn new() -> Self {
         Self::default()
     }
@@ -92,13 +92,13 @@ fn clean_completion(raw: &str, suffix_after_cursor: &str) -> String {
     text
 }
 
-impl EditPredictionDelegate for ChatGptEditPredictionDelegate {
+impl EditPredictionDelegate for AiInsightsEditPredictionDelegate {
     fn name() -> &'static str {
-        "chatgpt"
+        "ai_insights"
     }
 
     fn display_name() -> &'static str {
-        "ChatGPT"
+        "AI Insights"
     }
 
     fn show_predictions_in_menu() -> bool {
@@ -106,11 +106,12 @@ impl EditPredictionDelegate for ChatGptEditPredictionDelegate {
     }
 
     fn icons(&self, _cx: &App) -> EditPredictionIconSet {
-        EditPredictionIconSet::new(IconName::AiOpenAiGptSub)
+        EditPredictionIconSet::new(IconName::Sparkle)
     }
 
     fn is_enabled(&self, _buffer: &Entity<Buffer>, _cursor_position: Anchor, cx: &App) -> bool {
-        model::resolve_model(cx).is_some()
+        // The provider's API key may load lazily on the first request.
+        model::is_configured(Purpose::Completion, cx)
     }
 
     fn is_refreshing(&self, _cx: &App) -> bool {
@@ -132,9 +133,7 @@ impl EditPredictionDelegate for ChatGptEditPredictionDelegate {
             return;
         }
 
-        let settings = AiInsightsSettings::get_global(cx);
-        let debounce = debounce_duration.max(settings.completion_debounce);
-        let effort = settings.completion_effort.clone();
+        let debounce = debounce_duration.max(AiInsightsSettings::get_global(cx).completion_debounce);
         let file_name = buffer
             .read(cx)
             .file()
@@ -152,11 +151,11 @@ impl EditPredictionDelegate for ChatGptEditPredictionDelegate {
             let request = TextRequest {
                 system: SYSTEM_PROMPT.into(),
                 user: prompt,
-                effort,
-                max_output_tokens: Some(2_000),
                 stop: Vec::new(),
             };
-            let result = cx.update(|cx| model::complete_text(request, cx)).await;
+            let result = cx
+                .update(|cx| model::complete_text(Purpose::Completion, request, cx))
+                .await;
 
             let completion = match result {
                 Ok(raw) => clean_completion(&raw, &rest_of_line),

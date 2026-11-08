@@ -1,27 +1,31 @@
-//! AI insights on top of the ChatGPT subscription (`openai-subscribed` provider):
-//! - edit predictions (ghost text) via [`ChatGptEditPredictionDelegate`];
+//! AI insights on top of any language model provider configured in Zed
+//! (ChatGPT subscription by default; DeepSeek, OpenAI, Anthropic, Ollama, ...):
+//! - edit predictions (ghost text) via [`AiInsightsEditPredictionDelegate`];
 //! - a one-line description above each function / data structure;
-//! - advice cards below the cursor line ("looks like you're implementing X…").
+//! - advice cards ("looks like you're implementing X…") above the current function.
 //!
-//! Configured under `"ai_insights"` in settings.json.
+//! Configured under `"ai_insights"` in settings.json; models can also be picked
+//! with `ai_insights: select completion model` / `select insights model`.
 
 mod cache;
-mod chatgpt_prediction;
+mod completion_delegate;
 mod editor_insights;
-pub mod model;
 mod insights_settings;
+pub mod model;
+mod model_picker;
 
 use editor::Editor;
 use gpui::{App, AppContext as _, Context};
 use project::DisableAiSettings;
 use settings::Settings as _;
 
-pub use crate::chatgpt_prediction::ChatGptEditPredictionDelegate;
+pub use crate::completion_delegate::AiInsightsEditPredictionDelegate;
 pub use crate::insights_settings::AiInsightsSettings;
 use crate::editor_insights::{EditorInsights, InsightsAddon};
 
 pub fn init(cx: &mut App) {
     cache::init(cx);
+    model_picker::init(cx);
 
     cx.observe_new(|editor: &mut Editor, window, cx: &mut Context<Editor>| {
         if !editor.mode().is_full() || window.is_none() {

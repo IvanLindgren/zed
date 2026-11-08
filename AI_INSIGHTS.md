@@ -1,15 +1,36 @@
 # Zed + AI Insights (форк)
 
-Форк Zed 1.27.0 stable (`c84af5b`) с тремя AI-функциями. Все они работают через встроенный в Zed
-провайдер подписки ChatGPT (`openai-subscribed`), без отдельных API-ключей.
+Форк Zed 1.27.0 stable (`c84af5b`) с тремя AI-функциями. Работают с любым провайдером, настроенным в
+Zed: по умолчанию это подписка ChatGPT (`openai-subscribed`), но подойдут и DeepSeek, OpenAI, Anthropic,
+Google, Mistral, xAI, OpenRouter, Ollama, LM Studio и любой OpenAI-совместимый сервер. API-ключи
+вводятся в самом Zed: Agent Panel → Settings → LLM Providers.
 
-- **Автокомплит.** Провайдер edit predictions `chatgpt`: серый текст на месте курсора, Tab принимает.
+- **Автокомплит.** Провайдер edit predictions `ai_insights`: серый текст на месте курсора, Tab принимает.
 - **Описания.** Над каждой функцией и структурой данных появляется строка с кратким описанием.
   Описания кэшируются в `%LOCALAPPDATA%\Zed\ai_insights\descriptions.json`.
-- **Советы.** Если модель узнаёт, что вы реализуете (LRU-кэш, Дейкстру, rate limiter…), под строкой
-  появляется карточка с советами. Esc или крестик её закрывают, закрытый совет не повторяется.
+- **Советы.** Если модель узнаёт, что вы реализуете (LRU-кэш, Дейкстру, rate limiter…), появляется
+  карточка с советами: над текущей функцией или над строкой курсора, но никогда под ней, чтобы не
+  мешать серому тексту автокомплита. Пока подсказка автокомплита на экране, карточка ждёт.
+  Esc или крестик её закрывают, закрытый совет не повторяется.
 
-Код: `crates/ai_insights`, плюс вариант `ChatGpt` в `EditPredictionProvider`.
+Код: `crates/ai_insights`, плюс вариант `AiInsights` в `EditPredictionProvider`.
+
+## Выбор модели
+
+Через меню иконки ✦ в статус-баре (когда провайдер автокомплита `ai_insights`) или через палитру
+команд:
+
+- `ai insights: select completion model` выбирает модель для автокомплита;
+- `ai insights: select insights model` выбирает модель для описаний и советов.
+
+Выбор сохраняется в `settings.json`. Например, DeepSeek для автокомплита и подписка для остального:
+
+```jsonc
+"ai_insights": {
+  "provider": "openai-subscribed", "model": "gpt-6.1-terra",
+  "completion_provider": "deepseek", "completion_model": "deepseek-chat"
+}
+```
 
 ## Настройки
 
@@ -17,17 +38,20 @@
 "ai_insights": {
   "descriptions": true,
   "advice": true,
-  "language": "ru",            // язык описаний и советов
-  "model": "gpt-6.1-terra",    // id модели из подписки
-  "effort": "medium",          // для описаний и советов
-  "completion_effort": "low",  // для автокомплита
+  "language": "ru",                  // язык описаний и советов
+  "provider": "openai-subscribed",   // провайдер для описаний и советов
+  "model": "gpt-6.1-terra",          // модель для описаний и советов
+  "completion_provider": null,       // null: тот же провайдер
+  "completion_model": null,          // null: та же модель (или быстрая модель другого провайдера)
+  "effort": "medium",                // для описаний и советов
+  "completion_effort": "low",        // для автокомплита; модели без reasoning его игнорируют
   "completion_debounce_ms": 500,
   "advice_delay_ms": 2000,
   "max_file_bytes": 80000
 },
 // Сборка работает на канале preview, поэтому провайдер включается только для неё:
 "preview": {
-  "edit_predictions": { "provider": "chatgpt" }
+  "edit_predictions": { "provider": "ai_insights" }
 }
 ```
 

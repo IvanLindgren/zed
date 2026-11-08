@@ -290,16 +290,16 @@ impl Render for EditPredictionButton {
                         .with_handle(self.popover_menu_handle.clone()),
                 )
             }
-            EditPredictionProvider::ChatGpt => {
+            EditPredictionProvider::AiInsights => {
                 let enabled = self.editor_enabled.unwrap_or(true);
                 let this = cx.weak_entity();
 
                 div().child(
-                    PopoverMenu::new("chatgpt-edit-predictions")
+                    PopoverMenu::new("ai-insights-edit-predictions")
                         .menu(move |window, cx| {
                             this.update(cx, |this, cx| {
                                 this.build_edit_prediction_context_menu(
-                                    EditPredictionProvider::ChatGpt,
+                                    EditPredictionProvider::AiInsights,
                                     window,
                                     cx,
                                 )
@@ -308,7 +308,7 @@ impl Render for EditPredictionButton {
                         })
                         .anchor(Anchor::BottomRight)
                         .trigger_with_tooltip(
-                            IconButton::new("chatgpt-edit-predictions-icon", IconName::AiOpenAiGptSub)
+                            IconButton::new("ai-insights-edit-predictions-icon", IconName::Sparkle)
                                 .shape(IconButtonShape::Square)
                                 .tab_index(0isize)
                                 .aria_label("Edit Prediction")
@@ -322,7 +322,7 @@ impl Render for EditPredictionButton {
                                 Tooltip::with_meta(
                                     "Edit Prediction",
                                     Some(&ToggleMenu),
-                                    "Powered by your ChatGPT subscription",
+                                    "AI Insights: model is chosen in this menu",
                                     cx,
                                 )
                             },
@@ -1192,6 +1192,20 @@ impl EditPredictionButton {
         ContextMenu::build(window, cx, |mut menu, window, cx| {
             let user = self.user_store.read(cx).current_user();
 
+            if provider == EditPredictionProvider::AiInsights {
+                menu = menu
+                    .header("AI Insights")
+                    .action(
+                        "Completion Model…",
+                        zed_actions::ai_insights::SelectCompletionModel.boxed_clone(),
+                    )
+                    .action(
+                        "Descriptions & Advice Model…",
+                        zed_actions::ai_insights::SelectInsightsModel.boxed_clone(),
+                    )
+                    .separator();
+            }
+
             let needs_sign_in = user.is_none()
                 && matches!(
                     provider,
@@ -1651,12 +1665,9 @@ pub fn get_available_providers(cx: &mut App) -> Vec<EditPredictionProvider> {
         providers.push(EditPredictionProvider::Mercury);
     }
 
-    let chatgpt_provider_id = language_model::LanguageModelProviderId::new("openai-subscribed");
-    if language_model::LanguageModelRegistry::read_global(cx)
-        .provider(&chatgpt_provider_id)
-        .is_some_and(|provider| provider.is_authenticated(cx))
-    {
-        providers.push(EditPredictionProvider::ChatGpt);
+    // AI Insights can use any provider configured under LLM Providers.
+    if language_model::LanguageModelRegistry::read_global(cx).has_authenticated_provider(cx) {
+        providers.push(EditPredictionProvider::AiInsights);
     }
 
     providers

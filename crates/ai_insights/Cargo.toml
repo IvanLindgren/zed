@@ -13,10 +13,12 @@ path = "src/ai_insights.rs"
 doctest = false
 
 [dependencies]
+agent_ui.workspace = true
 anyhow.workspace = true
 collections.workspace = true
 editor.workspace = true
 edit_prediction_types.workspace = true
+fs.workspace = true
 futures.workspace = true
 gpui.workspace = true
 icons.workspace = true
@@ -32,3 +34,5 @@ settings.workspace = true
 text.workspace = true
 ui.workspace = true
 util.workspace = true
+workspace.workspace = true
+zed_actions.workspace = true

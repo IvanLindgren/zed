@@ -1559,11 +1559,20 @@
     "advice": true,
     // Language for descriptions and advice, e.g. "ru" or "en".
     "language": "ru",
-    // Model id from the ChatGPT subscription ("openai-subscribed" provider).
+    // Provider for descriptions and advice, as listed under LLM Providers:
+    // "openai-subscribed" (ChatGPT subscription), "deepseek", "openai", "anthropic",
+    // "google", "openrouter", "ollama", ... API keys are entered in Agent settings.
+    "provider": "openai-subscribed",
+    // Model id for descriptions and advice.
     "model": "gpt-6.1-terra",
+    // Provider and model for edit predictions; null means "same as above"
+    // (or the provider's fast model if only the provider differs).
+    "completion_provider": null,
+    "completion_model": null,
     // Reasoning effort for descriptions and advice: "none", "low", "medium", "high".
     "effort": "medium",
-    // Reasoning effort for edit predictions (edit_predictions.provider = "chatgpt").
+    // Reasoning effort for edit predictions (edit_predictions.provider = "ai_insights").
+    // Ignored by models without reasoning.
     "completion_effort": "low",
     // Pause in typing before an edit prediction request is sent, in milliseconds.
     "completion_debounce_ms": 500,

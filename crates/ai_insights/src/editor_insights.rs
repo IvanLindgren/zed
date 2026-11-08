@@ -25,7 +25,7 @@ use ui::{IconButton, IconName, IconSize, Label, LabelSize, div, h_flex, prelude:
 
 use crate::{
     AiInsightsSettings, cache,
-    model::{self, TextRequest},
+    model::{self, Purpose, TextRequest},
 };
 
 const DESCRIPTION_DEBOUNCE: Duration = Duration::from_millis(1500);
@@ -35,6 +35,11 @@ const ADVICE_LINES_BEFORE: u32 = 60;
 const ADVICE_LINES_AFTER: u32 = 15;
 const ADVICE_MAX_DISTANCE_ROWS: u32 = 25;
 const ADVICE_CHARS_PER_LINE: usize = 95;
+/// The card goes above the enclosing function when its header is at most this far up.
+const ADVICE_MAX_LIFT_ROWS: u32 = 15;
+/// While an edit prediction is on screen the card waits instead of competing with it.
+const ADVICE_RETRY_DELAY: Duration = Duration::from_millis(1500);
+const ADVICE_MAX_RETRIES: u32 = 20;
 
 /// Keeps [`EditorInsights`] alive for exactly as long as its editor.
 pub struct InsightsAddon {
@@ -84,7 +89,7 @@ struct AdviceState {
     last_request_at: Option<Instant>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 struct AdviceReply {
     #[serde(default)]
     show: bool,
@@ -220,7 +225,9 @@ impl EditorInsights {
 
             for batch in missing.chunks(DESCRIPTION_BATCH) {
                 let request = descriptions_request(batch, &source, file_name.as_deref(), &snapshot, &settings);
-                let reply = cx.update(|cx| model::complete_text(request, cx)).await;
+                let reply = cx
+                    .update(|cx| model::complete_text(Purpose::Insights, request, cx))
+                    .await;
                 let reply = match reply {
                     Ok(reply) => reply,
                     Err(error) => {
@@ -315,7 +322,9 @@ impl EditorInsights {
                 this.advice.last_request_at = Some(Instant::now());
             })?;
 
-            let reply = cx.update(|cx| model::complete_text(request, cx)).await;
+            let reply = cx
+                .update(|cx| model::complete_text(Purpose::Insights, request, cx))
+                .await;
             let reply = match reply {
                 Ok(reply) => reply,
                 Err(error) => {
@@ -395,8 +404,6 @@ Do not restate the code. No markdown."
             TextRequest {
                 system,
                 user,
-                effort: self.settings.effort.clone(),
-                max_output_tokens: Some(4_000),
                 stop: Vec::new(),
             },
             context_hash,
@@ -405,6 +412,41 @@ Do not restate the code. No markdown."
     }
 
     fn show_advice(&mut self, advice: AdviceReply, row: u32, cx: &mut Context<Self>) {
+        self.try_show_advice(advice, row, 0, cx);
+    }
+
+    /// Row the card is placed above: the header of the enclosing function or type
+    /// when it is close, otherwise the cursor line itself. Never below the cursor,
+    /// where edit predictions render their ghost text.
+    fn advice_anchor_row(&self, cursor_row: u32, cx: &App) -> u32 {
+        let Some((snapshot, _)) = self.singleton_snapshot(cx) else {
+            return cursor_row;
+        };
+        let offset = snapshot.point_to_offset(Point::new(cursor_row, 0));
+        snapshot
+            .outline_items_containing(offset..offset, false, None)
+            .iter()
+            .map(|item| item.range.start.to_point(&snapshot).row)
+            .filter(|start| *start <= cursor_row && cursor_row - start <= ADVICE_MAX_LIFT_ROWS)
+            .max()
+            .unwrap_or(cursor_row)
+    }
+
+    fn try_show_advice(&mut self, advice: AdviceReply, row: u32, attempt: u32, cx: &mut Context<Self>) {
+        let Some(editor) = self.editor.upgrade() else {
+            return;
+        };
+        if editor.read(cx).has_active_edit_prediction() {
+            if attempt < ADVICE_MAX_RETRIES {
+                self.advice.task = Some(cx.spawn(async move |this, cx| {
+                    cx.background_executor().timer(ADVICE_RETRY_DELAY).await;
+                    this.update(cx, |this, cx| this.try_show_advice(advice, row, attempt + 1, cx))?;
+                    Ok(())
+                }));
+            }
+            return;
+        }
+
         let key = advice.key.trim().to_ascii_lowercase();
         let tips: Vec<SharedString> = advice
             .tips
@@ -422,10 +464,8 @@ Do not restate the code. No markdown."
         {
             return;
         }
-        let Some(editor) = self.editor.upgrade() else {
-            return;
-        };
         self.dismiss_advice_card(false, cx);
+        let anchor_row = self.advice_anchor_row(row, cx);
 
         let title = SharedString::from(advice.title.trim().to_string());
         let wrapped_lines: usize = tips
@@ -436,14 +476,13 @@ Do not restate the code. No markdown."
         let insights = cx.entity().downgrade();
         let block_id = editor.update(cx, |editor, cx| {
             let multibuffer = editor.buffer().read(cx).snapshot(cx);
-            let max_row = multibuffer.max_point().row;
-            let row = row.min(max_row);
-            let indent = multibuffer.indent_size_for_line(multi_buffer_row(row)).len;
-            let anchor = multibuffer.anchor_after(Point::new(row, multibuffer.line_len(multi_buffer_row(row))));
+            let anchor_row = anchor_row.min(multibuffer.max_point().row);
+            let indent = multibuffer.indent_size_for_line(multi_buffer_row(anchor_row)).len;
+            let anchor = multibuffer.anchor_before(Point::new(anchor_row, 0));
             editor
                 .insert_blocks(
                     [BlockProperties {
-                        placement: BlockPlacement::Below(anchor),
+                        placement: BlockPlacement::Above(anchor),
                         height: Some(height),
                         style: BlockStyle::Flex,
                         render: advice_renderer(title, tips, indent, insights),
@@ -574,8 +613,6 @@ Use an empty string for symbols that are trivial (getters, obvious one-liners) o
     TextRequest {
         system,
         user,
-        effort: settings.effort.clone(),
-        max_output_tokens: Some(8_000),
         stop: Vec::new(),
     }
 }
