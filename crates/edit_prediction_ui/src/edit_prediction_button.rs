@@ -290,6 +290,46 @@ impl Render for EditPredictionButton {
                         .with_handle(self.popover_menu_handle.clone()),
                 )
             }
+            EditPredictionProvider::ChatGpt => {
+                let enabled = self.editor_enabled.unwrap_or(true);
+                let this = cx.weak_entity();
+
+                div().child(
+                    PopoverMenu::new("chatgpt-edit-predictions")
+                        .menu(move |window, cx| {
+                            this.update(cx, |this, cx| {
+                                this.build_edit_prediction_context_menu(
+                                    EditPredictionProvider::ChatGpt,
+                                    window,
+                                    cx,
+                                )
+                            })
+                            .ok()
+                        })
+                        .anchor(Anchor::BottomRight)
+                        .trigger_with_tooltip(
+                            IconButton::new("chatgpt-edit-predictions-icon", IconName::AiOpenAiGptSub)
+                                .shape(IconButtonShape::Square)
+                                .tab_index(0isize)
+                                .aria_label("Edit Prediction")
+                                .when(!enabled, |this| {
+                                    this.indicator(Indicator::dot().color(Color::Ignored))
+                                        .indicator_border_color(Some(
+                                            cx.theme().colors().status_bar_background,
+                                        ))
+                                }),
+                            move |_window, cx| {
+                                Tooltip::with_meta(
+                                    "Edit Prediction",
+                                    Some(&ToggleMenu),
+                                    "Powered by your ChatGPT subscription",
+                                    cx,
+                                )
+                            },
+                        )
+                        .with_handle(self.popover_menu_handle.clone()),
+                )
+            }
             EditPredictionProvider::Ollama => {
                 let enabled = self.editor_enabled.unwrap_or(true);
                 let this = cx.weak_entity();
@@ -1609,6 +1649,14 @@ pub fn get_available_providers(cx: &mut App) -> Vec<EditPredictionProvider> {
         .has_key()
     {
         providers.push(EditPredictionProvider::Mercury);
+    }
+
+    let chatgpt_provider_id = language_model::LanguageModelProviderId::new("openai-subscribed");
+    if language_model::LanguageModelRegistry::read_global(cx)
+        .provider(&chatgpt_provider_id)
+        .is_some_and(|provider| provider.is_authenticated(cx))
+    {
+        providers.push(EditPredictionProvider::ChatGpt);
     }
 
     providers

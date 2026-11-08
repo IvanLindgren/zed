@@ -1552,6 +1552,26 @@
     "enable_keep_preview_on_code_navigation": false,
   },
   // Settings related to the call hierarchy picker.
+  "ai_insights": {
+    // Show a one-line AI description above each function and data structure.
+    "descriptions": true,
+    // Show advice cards below the cursor line when the model recognizes what you are building.
+    "advice": true,
+    // Language for descriptions and advice, e.g. "ru" or "en".
+    "language": "ru",
+    // Model id from the ChatGPT subscription ("openai-subscribed" provider).
+    "model": "gpt-6.1-terra",
+    // Reasoning effort for descriptions and advice: "none", "low", "medium", "high".
+    "effort": "medium",
+    // Reasoning effort for edit predictions (edit_predictions.provider = "chatgpt").
+    "completion_effort": "low",
+    // Pause in typing before an edit prediction request is sent, in milliseconds.
+    "completion_debounce_ms": 500,
+    // Pause in typing before advice is requested, in milliseconds.
+    "advice_delay_ms": 2000,
+    // Files larger than this many bytes are not described.
+    "max_file_bytes": 80000
+  },
   "call_hierarchy": {
     // Determines how much space the call hierarchy picker can take up in relation to the available window width.
     //

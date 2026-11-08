@@ -198,6 +198,10 @@ pub struct SettingsContent {
 
     pub call_hierarchy: Option<CallHierarchySettingsContent>,
 
+    /// Settings for AI insights: per-symbol descriptions, advice cards and
+    /// ChatGPT-subscription edit predictions.
+    pub ai_insights: Option<AiInsightsSettingsContent>,
+
     pub git_panel: Option<GitPanelSettingsContent>,
 
     pub tabs: Option<ItemSettingsContent>,
@@ -405,7 +409,7 @@ impl SettingsContent {
 fallible_options::flattened_deserialize!(SettingsContent {
     sections: { project, theme, extension, workspace, editor, remote },
     options: {
-        call_hierarchy, command_palette, file_finder, git_panel, tabs, tab_bar, tab_switcher, status_bar, preview_tabs, agent,
+        call_hierarchy, ai_insights, command_palette, file_finder, git_panel, tabs, tab_bar, tab_switcher, status_bar, preview_tabs, agent,
         agent_servers, audio, auto_update, base_keymap, collaboration_panel, debugger, diagnostics,
         git,
         global_lsp_settings, image_viewer, markdown_preview, repl, helix_mode, hide_mouse,
@@ -1066,6 +1070,47 @@ pub struct CallHierarchySettingsContent {
     ///
     /// Default: medium
     pub modal_max_width: Option<ModalWidthContent>,
+}
+
+#[with_fallible_options]
+#[derive(Clone, Default, Serialize, Deserialize, JsonSchema, MergeFrom, Debug, PartialEq)]
+pub struct AiInsightsSettingsContent {
+    /// Show a one-line AI description above each function and data structure.
+    ///
+    /// Default: true
+    pub descriptions: Option<bool>,
+    /// Show advice cards below the cursor line when the model recognizes what you are building.
+    ///
+    /// Default: true
+    pub advice: Option<bool>,
+    /// Language for descriptions and advice, e.g. "ru" or "en".
+    ///
+    /// Default: "ru"
+    pub language: Option<String>,
+    /// Model id from the ChatGPT subscription (`openai-subscribed` provider).
+    ///
+    /// Default: "gpt-6.1-terra"
+    pub model: Option<String>,
+    /// Reasoning effort for descriptions and advice: "none", "low", "medium", "high".
+    ///
+    /// Default: "medium"
+    pub effort: Option<String>,
+    /// Reasoning effort for edit predictions (provider "chatgpt").
+    ///
+    /// Default: "low"
+    pub completion_effort: Option<String>,
+    /// Pause in typing before an edit prediction request is sent, in milliseconds.
+    ///
+    /// Default: 500
+    pub completion_debounce_ms: Option<u64>,
+    /// Pause in typing before advice is requested, in milliseconds.
+    ///
+    /// Default: 2000
+    pub advice_delay_ms: Option<u64>,
+    /// Files larger than this many bytes are not described.
+    ///
+    /// Default: 80000
+    pub max_file_bytes: Option<u64>,
 }
 
 #[with_fallible_options]

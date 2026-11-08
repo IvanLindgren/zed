@@ -594,6 +594,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "ai_insights"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "collections",
+ "edit_prediction_types",
+ "editor",
+ "futures 0.3.34",
+ "gpui",
+ "icons",
+ "language",
+ "language_model",
+ "log",
+ "multi_buffer",
+ "paths",
+ "project",
+ "serde",
+ "serde_json",
+ "settings",
+ "text",
+ "ui",
+ "util",
+]
+
+[[package]]
 name = "ai_onboarding"
 version = "0.1.0"
 dependencies = [
@@ -22379,6 +22404,7 @@ dependencies = [
  "agent_settings",
  "agent_skills",
  "agent_ui",
+ "ai_insights",
  "anyhow",
  "ashpd",
  "askpass",
